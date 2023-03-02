@@ -14,7 +14,7 @@ import Control.Monad (replicateM)
 import System.IO (hFlush, stdout)
 
 
--- import Text.Parsec
+
 import qualified Data.Text.IO as TIO (putStr, readFile)
 import qualified Data.Text as T
 
@@ -30,7 +30,7 @@ instance Show SymbolVal where
  show (Nested m) = show m
 
 
-
+-- Initialize a value for a varible.
 create' :: [Int] -> SymbolVal
 create' [] = Val (NumV $ IntV 0) (Nothing) (Nothing) id
 create' (i:is) = Nested $ M.fromList $ zip [0..i] (repeat $ create' is)
@@ -41,6 +41,7 @@ type Env = M.Map Int [Statement]
 type Eval = StateT SymbolTable IO
 
 
+-- evaluate an expression in a statment
 evalExpr :: Expr -> Int -> Eval Constant
 evalExpr (Const x) _ = pure x
 evalExpr (BinFunc f e1 e2) pc = f <$> (evalExpr e1 pc) <*> (evalExpr e2 pc)
@@ -83,7 +84,7 @@ lookupSymbol (Variable c es) pc = do
 
 
 updateSymbol :: [Int] -> Char -> Constant -> Maybe Int -> Maybe Constant -> (Constant -> Constant) -> SymbolTable -> SymbolTable
-updateSymbol is c !val ret end f symTable = M.alter (go is) c symTable where
+updateSymbol is c val ret end f symTable = M.alter (go is) c symTable where
  go [] _ = pure $ Val {value = val, retVal = ret, endVal = end, step = f}
  go (i:is) mVal = do
   v <- mVal
@@ -93,7 +94,7 @@ updateSymbol is c !val ret end f symTable = M.alter (go is) c symTable where
 
 
 evalSts :: Env -> Int -> Eval Bool
-evalSts env !pc = evalSts' env pc (fromMaybe ([]) $ M.lookup pc env) where
+evalSts env pc = evalSts' env pc (fromMaybe ([]) $ M.lookup pc env) where
  evalSts' :: Env -> Int -> [Statement] -> Eval Bool
  evalSts' env pc [] = case M.lookupGT pc env of
   Nothing -> error $ "Line number: " ++ show pc ++ " does not exist"
